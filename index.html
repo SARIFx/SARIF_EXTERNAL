@@ -136,10 +136,23 @@ th{font-weight:800;background:#f7f9fa}
 .authLogo{width:60px;height:60px;border-radius:16px;margin:0 auto 12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#fff);color:#07131e;font-weight:900;font-size:18px}
 .authBox h2{text-align:center;margin:5px 0}.authBox p{text-align:center;color:#707980}
 .authError{color:#d52e49;text-align:center;min-height:20px;margin:8px 0}
-.linkBox{background:#f4f7f8;border:1px dashed #b8c4ca;border-radius:10px;padding:14px;margin-top:15px;word-break:break-all;color:#24313a}
-.copyBtn{margin-top:9px}
 .lockNote{font-size:13px;color:#69737a;margin-top:10px}
 .logout{margin-left:10px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;border-radius:9px;padding:9px 12px;cursor:pointer}
+
+
+/* PUBLIC HOME IS THE DEFAULT SCREEN */
+body:not(.admin-mode) .header,
+body:not(.admin-mode) .layout,
+body:not(.admin-mode) .support { display:none !important; }
+body:not(.admin-mode) #authScreen { display:none !important; }
+#publicHome { display:block !important; position:fixed; inset:0; z-index:9999; }
+#publicHome .sxm-home { min-height:100vh; height:100vh; box-sizing:border-box; }
+body.admin-mode #publicHome { display:none !important; }
+body.admin-mode .header,
+body.admin-mode .layout { display:flex; }
+body.admin-mode .header { display:flex; }
+body.admin-mode .support { display:grid; }
+body.admin-mode #authScreen { display:none; }
 
 </style>
 
@@ -179,7 +192,7 @@ window.cloudLoadKeys=async ()=>{
     <input id="loginPass" type="password" autocomplete="current-password" placeholder="Enter password">
     <div class="authError" id="authError"></div>
     <button class="btn" style="width:100%" onclick="login()">Login</button>
-    <p class="lockNote">Public key links can bypass this screen only for the automatic 1-day / 1-device / 1-key action.</p>
+    <p class="lockNote">Enter your admin username and password to open the dashboard.</p>
   </div>
 </div>
 
@@ -195,7 +208,6 @@ window.cloudLoadKeys=async ()=>{
     <button data-page="generate">＋ &nbsp; Generate</button>
     <button data-page="keys">🔑 &nbsp; Keys</button>
     <button data-page="settings">⚙ &nbsp; Settings</button>
-    <button data-page="link">🔗 &nbsp; Public Key Link</button>
   </nav>
 </aside>
 
@@ -271,7 +283,7 @@ window.cloudLoadKeys=async ()=>{
 @media(max-width:420px){.sxm-card{padding:30px 20px 25px}.sxm-btn{height:58px}.sxm-sub{font-size:15px}}
 </style>
 
-<section id="publicHome" class="page active" style="display:none">
+<section id="publicHome">
   <div class="sxm-home">
     <div class="sxm-grid"></div>
     <div class="sxm-particles">
@@ -301,7 +313,7 @@ window.cloudLoadKeys=async ()=>{
 
       <button class="sxm-btn sxm-login" onclick="openAdminLogin()">⇥&nbsp; Admin Login / Dashboard</button>
 
-      <button class="sxm-btn sxm-key" onclick="startKeyGate()">⚿&nbsp; Get VIP Key</button>
+      <a class="sxm-btn sxm-key" href="https://sarifx.github.io/SARIF_X_MODE/">⚿&nbsp; Get VIP Key</a>
 
       <div class="sxm-foot">© 2026 SARIF X MODE. All rights reserved.</div>
     </div>
@@ -426,8 +438,4 @@ window.cloudLoadKeys=async ()=>{
     <div class="cardHead">Customization</div>
     <div class="cardBody">
       <div class="formGrid">
-        <div><label>Panel Name</label><input id="panelName" value="SARIF X MODE"></div>
-        <div><label>Admin Balance (demo)</label><input id="adminBalance" type="number" value="2147457947"></div>
-        <div><label>Default Key Prefix</label><input id="prefix" value="SARIF_X_MODE_"></div>
-        <div><label>Support Text</label><input id="supportText" value="Contact Support"></div>
-        <div><labe
+        <div><label>Panel Name</label><input id="panelN
