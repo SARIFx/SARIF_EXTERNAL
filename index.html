@@ -151,7 +151,7 @@ if(!autoGenerateFromPublicLink()){if(isLogged())hideAuth();else showAuth()}rende
 
 <script>
 const GATE_SETTINGS_KEY="sarif_x_mode_gate";
-function getGateSettings(){try{return JSON.parse(localStorage.getItem(GATE_SETTINGS_KEY))||{url:"https://earnlinks.in/",param:"return"}}catch(e){return{url:"https://earnlinks.in/",param:"return"}}}
+function getGateSettings(){try{return JSON.parse(localStorage.getItem(GATE_SETTINGS_KEY))||{url:"https://sarifx.github.io/SARIF_X_MODE/",param:"return"}}catch(e){return{url:"https://sarifx.github.io/SARIF_X_MODE/",param:"return"}}}
 function openAdminLogin(){document.getElementById("authScreen").style.display="grid"}
 function startKeyGate(){const s=getGateSettings();if(!s.url){alert("The key-generation link has not been configured by the admin.");return}const returnUrl=location.origin+location.pathname+"?"+s.param+"=1";const sep=s.url.includes("?")?"&":"?";location.href=s.url+sep+s.param+"="+encodeURIComponent(returnUrl)}
 function handleGateReturn(){const s=getGateSettings(),qs=new URLSearchParams(location.search);if(qs.get(s.param)==="1"){const msg=document.getElementById("gateMessage");if(msg)msg.textContent="Link completed. Continue to receive your key."}}
