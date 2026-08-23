@@ -192,7 +192,7 @@ window.cloudLoadKeys=async ()=>{
     <button class="active" data-page="dashboard">⌂ &nbsp; Dashboard</button>
     <button data-page="generate">＋ &nbsp; Generate</button>
     <button data-page="keys">🔑 &nbsp; Keys</button>
-    <button data-page="settings">⚙ &nbsp; Settings</button>
+    <button data-page="userToken">🔐 &nbsp; USER TOKEN</button>
   </nav>
 </aside>
 
@@ -417,33 +417,35 @@ window.cloudLoadKeys=async ()=>{
   </div>
 </section>
 
-<section id="settings" class="page">
-  <div class="title">Panel Settings</div>
-  <div class="card">
-    <div class="cardHead">Customization</div>
+<section id="userToken" class="page">
+  <div class="title">USER TOKEN</div>
+  <div class="card formCard">
+    <div class="cardHead">Generate One-Time User Token</div>
     <div class="cardBody">
-      <div class="formGrid">
-        <div><label>Panel Name</label><input id="panelName" value="SARIF X MODE"></div>
-        <div><label>Admin Balance (demo)</label><input id="adminBalance" type="number" value="2147457947"></div>
-        <div><label>Default Key Prefix</label><input id="prefix" value="SARIF-X-MODE-"></div>
-        <div><label>Support Text</label><input id="supportText" value="Contact Support"></div>
-        <div><label>Admin Username</label><input id="newUser" value="admin"></div>
-        <div><label>Admin Password</label><input id="newPass" type="password" value="adminkuropanal"></div>
+      <p style="color:#29333c;line-height:1.5;margin-top:0">
+        Generate a token for one user/device. After successful use on the
+        protected SARIF website, that token is permanently marked as used.
+      </p>
+
+      <label>Generated Token</label>
+      <div id="generatedUserToken" class="generated" style="user-select:text;-webkit-user-select:text;cursor:text"
+           style="font-size:17px;min-height:22px">No token generated</div>
+
+      <div class="preview">
+        <b>Status:</b> <span id="userTokenStatus">Ready</span><br>
+        <small style="color:#6d7680">
+          One token = one successful use. The protected website validates
+          the token using the same Firebase project.
+        </small>
       </div>
-      
-<div style="margin-top:16px;padding:14px;border-radius:10px;background:#fff3cd;color:#5d4700">
-<b>Firebase security:</b> This HTML contains only the client Firebase configuration.
-The database must be protected with Firebase Authentication and Realtime Database Security Rules.
-Never place a Firebase service-account private key in this HTML.
-</div>
-<div class="actions"><button class="btn" onclick="saveSettings()">Save Settings</button><button class="btn danger" onclick="clearAll()">Clear Demo Data</button></div>
+
+      <div class="actions">
+        <button class="btn" onclick="generateUserToken()">Generate New Token</button>
+        <button class="btn secondary" onclick="copyUserToken()">Copy Token</button>
+      </div>
     </div>
   </div>
 </section>
-
-
-
-
 
 <div class="footer">© 2026 – <b>SARIF X MODE</b></div>
 </main>
@@ -456,7 +458,7 @@ Never place a Firebase service-account private key in this HTML.
     <p>Your key has been created successfully.</p>
     <div class="generated" id="generatedKey"></div>
     <p id="generatedInfo"></p>
-    <button class="btn" onclick="copyGeneratedKey()">Copy Key</button> <button class="btn" onclick="copyGeneratedKey()">Copy Key</button><button class="btn" onclick="closeModal()">Done</button>
+    <button class="btn" onclick="copyGeneratedKey()">Copy Key</button><button class="btn" onclick="closeModal()">Done</button>
   </div>
 </div>
 
@@ -465,6 +467,111 @@ const STORE="freeVipPanelDemo";
 
 const AUTH_STORE=STORE+"_auth";
 const DEFAULT_AUTH={user:"admin",pass:"adminkuropanal"};
+const USER_TOKEN_PREFIX="SARIF-X-";
+let currentUserToken="";
+
+function randomTokenPart(length=8){
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes=new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes,b=>chars[b%chars.length]).join("");
+}
+
+async function generateUserToken(){
+  const status=document.getElementById("userTokenStatus");
+  const output=document.getElementById("generatedUserToken");
+
+  try{
+    status.textContent="Generating...";
+    const token=USER_TOKEN_PREFIX+randomTokenPart(8)+"-"+randomTokenPart(8)+"-"+randomTokenPart(8)+"-"+randomTokenPart(8);
+
+    await window.sarifSet(
+      window.sarifRef(window.sarifDB,"userTokens/"+token),
+      {
+        token,
+        used:false,
+        deviceId:null,
+        createdAt:Date.now(),
+        usedAt:null
+      }
+    );
+
+    currentUserToken=token;
+    output.textContent=token;
+    status.textContent="Generated — unused";
+  }catch(e){
+    console.error("Token generation failed:",e);
+    status.textContent="Generation failed";
+    alert("Token generation failed. Check Firebase access/rules.");
+  }
+}
+
+async function copyUserToken(){
+  const token=(currentUserToken||document.getElementById("generatedUserToken")?.textContent||"").trim();
+
+  if(!token || token==="No token generated"){
+    alert("Generate a token first.");
+    return;
+  }
+
+  // Modern clipboard API
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(token);
+      alert("Token copied.");
+      return;
+    }
+  }catch(e){
+    console.warn("Clipboard API failed:",e);
+  }
+
+  // Android WebView / older browser fallback
+  try{
+    const area=document.createElement("textarea");
+    area.value=token;
+    area.setAttribute("readonly","");
+    area.style.position="fixed";
+    area.style.left="-9999px";
+    area.style.top="0";
+    area.style.opacity="0";
+    document.body.appendChild(area);
+    area.focus();
+    area.select();
+    area.setSelectionRange(0, area.value.length);
+
+    const ok=document.execCommand("copy");
+    document.body.removeChild(area);
+
+    if(ok){
+      alert("Token copied.");
+      return;
+    }
+  }catch(e){
+    console.warn("Fallback copy failed:",e);
+  }
+
+  // Last-resort: select the token so the user can tap Copy in Android.
+  const output=document.getElementById("generatedUserToken");
+  if(output){
+    const range=document.createRange();
+    range.selectNodeContents(output);
+    const selection=window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+  alert("Automatic copy is blocked by this browser. The token has been selected; tap Copy.");
+}
+
+async function loadUserToken(){
+  const output=document.getElementById("generatedUserToken");
+  const status=document.getElementById("userTokenStatus");
+  if(output) output.textContent=currentUserToken||"No token generated";
+  if(status) status.textContent=currentUserToken?"Generated — unused":"Ready";
+
+  // Automatically create a token the first time USER TOKEN is opened.
+  if(!currentUserToken) await generateUserToken();
+}
+
 function isLogged(){return sessionStorage.getItem(AUTH_STORE)==="1"}
 
 function openAdminLogin(){
@@ -487,11 +594,41 @@ document.getElementById("loginPass")?.addEventListener("keydown",e=>{
 function showAuth(){document.getElementById("authScreen").style.display="grid"}
 function hideAuth(){document.getElementById("authScreen").style.display="none"}
 function login(){
-  const u=loginUser.value.trim(), p=loginPass.value;
-  const saved=JSON.parse(localStorage.getItem(STORE+"_credentials")||"null")||DEFAULT_AUTH;
-  if(u===saved.user && p===saved.pass){sessionStorage.setItem(AUTH_STORE,"1");hideAuth();document.getElementById("sidebar").style.display="";document.getElementById("publicHome").style.display="none";authError.textContent="";navigate("dashboard")}
-  else authError.textContent="Invalid username or password";
+  const userEl=document.getElementById("loginUser");
+  const passEl=document.getElementById("loginPass");
+  const errorEl=document.getElementById("authError");
+
+  const u=(userEl?.value||"").trim();
+  const p=passEl?.value||"";
+
+  let saved=DEFAULT_AUTH;
+  try{
+    const stored=localStorage.getItem(STORE+"_credentials");
+    if(stored){
+      const parsed=JSON.parse(stored);
+      if(parsed && typeof parsed.user==="string" && typeof parsed.pass==="string"){
+        saved=parsed;
+      }
+    }
+  }catch(e){
+    console.warn("Credential storage read failed:",e);
+  }
+
+  if(u===saved.user && p===saved.pass){
+    sessionStorage.setItem(AUTH_STORE,"1");
+    hideAuth();
+    document.getElementById("sidebar").style.display="";
+    document.getElementById("publicHome").style.display="none";
+    if(errorEl) errorEl.textContent="";
+    navigate("dashboard");
+  }else{
+    if(errorEl) errorEl.textContent="Invalid username or password";
+  }
 }
+window.openAdminLogin=openAdminLogin;
+window.login=login;
+window.logout=logout;
+
 function logout(){sessionStorage.removeItem(AUTH_STORE);hideAuth();document.getElementById("sidebar").style.display="none";document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById("publicHome").style.display="block";document.getElementById("publicHome").classList.add("active")}
 let keys=JSON.parse(localStorage.getItem(STORE)||"[]");
 let settings=JSON.parse(localStorage.getItem(STORE+"_settings")||'{"name":"SARIF X MODE","balance":2147457947,"prefix":"SARIF-X-MODE-"}');
@@ -536,7 +673,7 @@ function navigate(page){
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
   document.getElementById(page).classList.add("active");
   document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.page===page));
-  if(page==="dashboard")renderDashboard(); if(page==="keys")renderKeys(); setTimeout(()=>window.cloudLoadKeys?.(),1200);
+  if(page==="dashboard")renderDashboard(); if(page==="keys")renderKeys(); if(page==="userToken")loadUserToken(); setTimeout(()=>window.cloudLoadKeys?.(),1200);
   document.getElementById("sidebar").classList.remove("open");
 }
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>navigate(b.dataset.page));
@@ -669,6 +806,7 @@ document.getElementById("publicHome").classList.add("active");
 updateEstimate();
 renderDashboard();
 renderKeys();
+loadUserToken();
 </script>
 </body>
 </html>
